@@ -1,4 +1,7 @@
 import sys
+from datetime import timedelta, date
+import format_tweets
+
 if sys.version_info[0] < 3:
     import got
 else:
@@ -6,31 +9,42 @@ else:
 
 def main():
 
-	def printTweet(descr, t):
-		print(descr)
-		print("Username: %s" % t.username)
-		print("Retweets: %d" % t.retweets)
-		print("Text: %s" % t.text)
-		print("Mentions: %s" % t.mentions)
-		print("Hashtags: %s\n" % t.hashtags)
+    start_date = date(2014, 2, 19)
+    end_date = date(2017, 11, 1)
+    fileNamePrefix = "Output"
+    i=1
+    for single_date in daterange(start_date, end_date):
+        start =  single_date.strftime("%Y-%m-%d")
+        end = (single_date + timedelta(1)).strftime("%Y-%m-%d")
+        tweetCriteria = got.manager.TweetCriteria().setQuerySearch('bitcoin').setTopTweets(True).setSince(start).setUntil(end).setMaxTweets(1000)
+        tweets = got.manager.TweetManager.getTweets(tweetCriteria)
+        writeToFile(fileNamePrefix+str(i/10), start, tweets)
+        print "written tweets for date - " + start
+        i+=1
 
-	# Example 1 - Get tweets by username
-	tweetCriteria = got.manager.TweetCriteria().setUsername('barackobama').setMaxTweets(1)
-	tweet = got.manager.TweetManager.getTweets(tweetCriteria)[0]
+def writeToFile(fileName, date, tweets):
+    file = open(fileName, 'a')
+    file.write("##########"+date+"\n")
+    for tweet in tweets:
+        file.write(format_tweets.format_text(tweet.text.encode('utf-8'))+"\n")
+    file.close()
 
-	printTweet("### Example 1 - Get tweets by username [barackobama]", tweet)
 
-	# Example 2 - Get tweets by query search
-	tweetCriteria = got.manager.TweetCriteria().setQuerySearch('europe refugees').setSince("2015-05-01").setUntil("2015-09-30").setMaxTweets(1)
-	tweet = got.manager.TweetManager.getTweets(tweetCriteria)[0]
+def daterange(start_date, end_date):
+    for n in range(int ((end_date - start_date).days)):
+        yield start_date + timedelta(n)
 
-	printTweet("### Example 2 - Get tweets by query search [europe refugees]", tweet)
-
-	# Example 3 - Get tweets by username and bound dates
-	tweetCriteria = got.manager.TweetCriteria().setUsername("barackobama").setSince("2015-09-10").setUntil("2015-09-12").setMaxTweets(1)
-	tweet = got.manager.TweetManager.getTweets(tweetCriteria)[0]
-
-	printTweet("### Example 3 - Get tweets by username and bound dates [barackobama, '2015-09-10', '2015-09-12']", tweet)
+def printTweet(descr, t):
+    print(descr)
+    print("Date: %s" % t.date)
+    print("favorites: %s" % t.favorites)
+    print("geo: %s" % t.geo)
+    print("id: %s" % t.id)
+    print("Username: %s" % t.username)
+    print("Retweets: %d" % t.retweets)
+    print("Text: %s" % t.text)
+    print("Mentions: %s" % t.mentions)
+    print("Hashtags: %s\n" % t.hashtags)
 
 if __name__ == '__main__':
 	main()
